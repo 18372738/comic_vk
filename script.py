@@ -10,8 +10,6 @@ from requests.exceptions import HTTPError
 from environs import Env
 
 
-
-
 def upload_comic_image(image_url, path):
     response = requests.get(image_url)
     response.raise_for_status()
