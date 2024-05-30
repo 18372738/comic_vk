@@ -7,6 +7,8 @@ from pathlib import Path
 from environs import Env
 
 
+
+
 def upload_comic_image(image_url, path):
     response = requests.get(image_url)
     with open(path, 'wb') as file:
@@ -20,9 +22,6 @@ def link_random_comic():
     response = requests.get(url)
     response.raise_for_status()
     return response.json()
-
-
-
 
 
 def get_upload_url_server(vk_token, group_id):
@@ -45,7 +44,7 @@ def upload_image_server(server_link, path):
             'photo': file,
             }
         response = requests.post(url, files=files)
-        response.raise_for_status()
+    response.raise_for_status()
     return response.json()
 
 
@@ -79,14 +78,12 @@ def upload_wall_image(vk_token, group_id, message, owner_id, media_id):
     return response.json()
 
 
-
 if __name__ == '__main__':
     env = Env()
     env.read_env()
 
     vk_token = env.str('VK_TOKEN')
     group_id = env('GROUP_ID')
-
 
     Path('image').mkdir(parents=True, exist_ok=True)
 
