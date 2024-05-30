@@ -1,9 +1,12 @@
 import os
 import random
-import requests
+import time
 from urllib.parse import urljoin, urlsplit, unquote
 from shutil import rmtree
 from pathlib import Path
+
+import requests
+from requests.exceptions import HTTPError
 from environs import Env
 
 
@@ -11,6 +14,8 @@ from environs import Env
 
 def upload_comic_image(image_url, path):
     response = requests.get(image_url)
+    response.raise_for_status()
+    check_for_redirect(response)
     with open(path, 'wb') as file:
         file.write(response.content)
 
@@ -21,6 +26,7 @@ def link_random_comic():
     url = f'https://xkcd.com/{random_number}/info.0.json'
     response = requests.get(url)
     response.raise_for_status()
+    check_for_redirect(response)
     return response.json()
 
 
@@ -33,6 +39,7 @@ def get_upload_url_server(vk_token, group_id):
     }
     response = requests.get(url, params=params)
     response.raise_for_status()
+    check_for_redirect(response)
     server_link = response.json()['response']['upload_url']
     return server_link
 
@@ -45,6 +52,7 @@ def upload_image_server(server_link, path):
             }
         response = requests.post(url, files=files)
     response.raise_for_status()
+    check_for_redirect(response)
     return response.json()
 
 
@@ -60,6 +68,7 @@ def save_image_in_album(vk_token, group_id, photo, server, hash):
     }
     response = requests.post(url, params=params)
     response.raise_for_status()
+    check_for_redirect(response)
     return response.json()
 
 
@@ -75,7 +84,13 @@ def upload_wall_image(vk_token, group_id, message, owner_id, media_id):
     }
     response = requests.post(url, params=params)
     response.raise_for_status()
+    check_for_redirect(response)
     return response.json()
+
+
+def check_for_redirect(response):
+    if response.history:
+        raise requests.exceptions.HTTPError
 
 
 if __name__ == '__main__':
@@ -106,5 +121,13 @@ if __name__ == '__main__':
         owner_id = link_image['response'][0]['owner_id']
         media_id = link_image['response'][0]['id']
         upload_wall_image(vk_token, group_id, comic_comment, owner_id, media_id)
+
+    except requests.exceptions.ConnectionError as http_err:
+        print(f'Нет подключения к сайту {http_err}')
+        time.sleep(3)
+    except HTTPError as http_err:
+        print(f'По ссылке {http_err} нет картинки  для скачивания')
+    except Exception as err:
+        print(f'Ошибка авторизации: {err}')
     finally:
         rmtree('image')
